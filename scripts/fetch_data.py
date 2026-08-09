@@ -82,6 +82,23 @@ def to_float(s):
         return None
 
 
+def parse_par_value(s):
+    """
+    解析每股面額。TWSE 回傳格式類似「新台幣 10.0000元」，取出數字部分。
+    無面額股回傳 None，該公司改為跳過而非硬套 10 元。
+    """
+    if not s:
+        return None
+    txt = str(s)
+    if "無面額" in txt:
+        return None
+    m = re.search(r"(\d+(?:\.\d+)?)", txt)
+    if not m:
+        return None
+    val = float(m.group(1))
+    return val if val > 0 else None
+
+
 def ym_key(data_ym) -> str:
     """統一成6碼可排序字串。'11507' -> '011507'"""
     digits = re.sub(r"\D", "", str(data_ym or ""))
@@ -116,178 +133,3 @@ def normalize_revenue(raw: list, market: str) -> list:
             "data_ym": pick(row, "資料年月", "DataYearMonth"),
             "cur_revenue_k": to_float(pick(row, "營業收入-當月營收")),
             "cum_revenue_k": to_float(pick(row, "累計營業收入-當月累計營收")),
-            "cur_yoy": cur_yoy,
-            "cum_yoy": cum_yoy,
-        })
-    print(f"     -> {market} 可用 {len(out)} 家")
-    return out
-
-
-def screen_accelerating(rows: list) -> list:
-    result = []
-    for r in rows:
-        if r["cum_yoy"] > MIN_CUM_YOY and r["cur_yoy"] > ACCEL_MULTIPLIER * r["cum_yoy"]:
-            r2 = dict(r)
-            r2["accel_ratio"] = round(r["cur_yoy"] / r["cum_yoy"], 2)
-            result.append(r2)
-    result.sort(key=lambda x: x["accel_ratio"], reverse=True)
-    return result
-
-
-# ==================== 連續加速月數 ====================
-
-def load_history_index() -> dict:
-    index = {}
-    for path in glob.glob(os.path.join(HISTORY_DIR, "*.json")):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                payload = json.load(f)
-            key = ym_key(payload.get("data_ym"))
-            if not key or key == "000000":
-                continue
-            index[key] = {r.get("code") for r in payload.get("accelerating", []) if r.get("code")}
-        except Exception as e:
-            print(f"[WARN] 歷史檔讀取失敗 {path}：{e}")
-    return index
-
-
-def compute_streaks(accelerating: list, current_key: str, history: dict) -> None:
-    for r in accelerating:
-        streak = 1
-        key = prev_ym(current_key)
-        while key in history and r["code"] in history[key]:
-            streak += 1
-            key = prev_ym(key)
-        r["streak"] = streak
-    max_streak = max((r["streak"] for r in accelerating), default=0)
-    multi = sum(1 for r in accelerating if r["streak"] >= 2)
-    print(f"     連續加速：最長 {max_streak} 個月，連2個月以上共 {multi} 家")
-
-
-# ==================== 市值 ====================
-
-def build_market_cap_map() -> dict:
-    """
-    市值(千元) = 已發行股數 × 收盤價 / 1000
-    上市：股本與收盤價分屬兩支端點，需要合併
-    上櫃：行情端點同時含 Close 與 Capitals，一支搞定
-    """
-    cap_map = {}
-
-    # ---- 上市 ----
-    capital_raw = fetch_json(TWSE_CAPITAL_URL, "TWSE 上市公司基本資料(股本)")
-    price_raw = fetch_json(TWSE_PRICE_URL, "TWSE 上市每日收盤行情")
-
-    shares_map = {}
-    for row in capital_raw:
-        code = pick(row, "公司代號", "出表日期")
-        shares = to_float(pick(row, "已發行普通股數或TDR原發行股數", "已發行普通股數"))
-        code = pick(row, "公司代號")
-        if code and shares:
-            shares_map[str(code).strip()] = shares
-
-    price_map = {}
-    for row in price_raw:
-        code = pick(row, "證券代號", "Code")
-        close = to_float(pick(row, "收盤價", "ClosingPrice"))
-        if code and close:
-            price_map[str(code).strip()] = close
-
-    twse_hits = 0
-    for code, shares in shares_map.items():
-        close = price_map.get(code)
-        if close:
-            cap_map[code] = round(shares * close / 1000, 0)
-            twse_hits += 1
-    print(f"     -> 上市市值計算成功 {twse_hits} 家")
-
-    # ---- 上櫃 ----
-    otc_raw = fetch_json(TPEX_QUOTES_URL, "TPEx 上櫃股票行情(含發行股數)")
-    otc_hits = 0
-    for row in otc_raw:
-        code = pick(row, "SecuritiesCompanyCode", "證券代號", "代號")
-        close = to_float(pick(row, "Close", "收盤"))
-        shares = to_float(pick(row, "Capitals", "發行股數"))
-        if code and close and shares:
-            cap_map[str(code).strip()] = round(shares * close / 1000, 0)
-            otc_hits += 1
-    print(f"     -> 上櫃市值計算成功 {otc_hits} 家")
-
-    return cap_map
-
-
-def size_tier(market_cap_k):
-    if market_cap_k is None:
-        return "未知"
-    cap_yi = market_cap_k / 100000  # 千元 -> 億元
-    if cap_yi >= 1000:
-        return "大型股(千億+)"
-    elif cap_yi >= 100:
-        return "中大型股(百億-千億)"
-    elif cap_yi >= 30:
-        return "中型股(30-100億)"
-    else:
-        return "小型股(<30億)"
-
-
-# ==================== 主流程 ====================
-
-def main():
-    os.makedirs(HISTORY_DIR, exist_ok=True)
-
-    print("=== 抓取月營收 ===")
-    twse_rows = normalize_revenue(fetch_json(TWSE_REVENUE_URL, "TWSE 上市月營收"), "上市")
-    tpex_rows = normalize_revenue(fetch_json(TPEX_REVENUE_URL, "TPEx 上櫃月營收"), "上櫃")
-    rows = twse_rows + tpex_rows
-
-    if not rows:
-        print("[ERROR] 沒有抓到任何營收資料，中止本次執行（不覆蓋既有檔案）")
-        return
-    if not tpex_rows:
-        print("[WARN] 上櫃資料為空，本次只會有上市公司。請把上面的欄位範例貼出來檢查。")
-
-    data_ym = rows[0]["data_ym"]
-    current_key = ym_key(data_ym)
-
-    print("\n=== 計算市值 ===")
-    cap_map = build_market_cap_map()
-    matched = 0
-    for r in rows:
-        r["market_cap_k"] = cap_map.get(r["code"])
-        r["size_tier"] = size_tier(r["market_cap_k"])
-        if r["market_cap_k"]:
-            matched += 1
-    print(f"     -> 營收名單中成功對到市值 {matched}/{len(rows)} 家")
-
-    print("\n=== 篩選加速股 ===")
-    accelerating = screen_accelerating(rows)
-
-    history = load_history_index()
-    history.pop(current_key, None)
-    compute_streaks(accelerating, current_key, history)
-
-    payload = {
-        "data_ym": data_ym,
-        "ym_key": current_key,
-        "updated_at": datetime.date.today().isoformat(),
-        "count_all": len(rows),
-        "count_twse": len(twse_rows),
-        "count_tpex": len(tpex_rows),
-        "count_accelerating": len(accelerating),
-        "count_streak_2plus": sum(1 for r in accelerating if r.get("streak", 1) >= 2),
-        "history_months": len(history) + 1,
-        "accelerating": accelerating,
-    }
-
-    with open(os.path.join(HISTORY_DIR, f"{current_key}.json"), "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
-    with open(os.path.join(OUTPUT_DIR, "latest.json"), "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
-
-    print(f"\n完成：資料年月 {data_ym}")
-    print(f"      上市 {len(twse_rows)} 家 + 上櫃 {len(tpex_rows)} 家 = {len(rows)} 家")
-    print(f"      加速股 {len(accelerating)} 家")
-
-
-if __name__ == "__main__":
-    main()
