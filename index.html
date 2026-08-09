@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>台股營收加速股篩選</title>
+<meta name="description" content="每月1-10日自動掃描上市櫃月營收，篩出當月年增率高於累計年增率1.3倍的加速成長公司，可依產業、市值規模篩選。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFF2F5;
+    --surface:#FFFFFF;
+    --band:#16232F;
+    --ink:#111821;
+    --muted:#5F6A78;
+    --rule:#D7DDE4;
+    --rule-soft:#E8ECF1;
+    /* 台股慣例：紅漲綠跌，加速訊號用紅 */
+    --accel:#C4283A;
+    --accel-soft:#F6E2E4;
+    --base:#3C5A73;
+    --focus:#1F6FEB;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Noto Sans TC",system-ui,sans-serif;
+    font-size:15px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+  /* ---------- 頁首 ---------- */
+  .band{background:var(--band);color:#EDF1F5;padding:26px 0 22px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:#8FA3B5;display:flex;gap:14px;flex-wrap:wrap;align-items:center
+  }
+  .eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--accel);display:inline-block;margin-right:6px;vertical-align:middle}
+  h1{
+    font-family:"Noto Serif TC",serif;font-weight:700;
+    font-size:clamp(26px,4.2vw,40px);line-height:1.2;margin:10px 0 6px;letter-spacing:.01em
+  }
+  .lede{color:#A9B8C6;font-size:14px;max-width:46em;margin:0}
+  .rule-formula{
+    display:inline-block;margin-top:14px;padding:7px 12px;border:1px solid #33465A;border-radius:3px;
+    font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:#C8D6E2;background:#1D2C3A
+  }
+  .rule-formula b{color:#E9838F;font-weight:600}
+
+  /* ---------- 摘要數字 ---------- */
+  .stats{display:flex;flex-wrap:wrap;gap:0;border-top:1px solid #2A3A4A;margin-top:22px;padding-top:16px}
+  .stat{padding-right:34px;margin-right:34px;border-right:1px solid #2A3A4A}
+  .stat:last-child{border-right:0;margin-right:0;padding-right:0}
+  .stat .k{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;color:#8FA3B5;text-transform:uppercase}
+  .stat .v{font-family:"IBM Plex Mono",monospace;font-size:23px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+  .stat .v small{font-size:12px;color:#8FA3B5;font-weight:400;margin-left:3px}
+
+  /* ---------- 篩選列 ---------- */
+  .toolbar{
+    background:var(--surface);border-bottom:1px solid var(--rule);
+    position:sticky;top:0;z-index:20;box-shadow:0 1px 0 rgba(17,24,33,.03)
+  }
+  .toolbar-in{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:14px 20px;max-width:1180px;margin:0 auto}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+  select,input[type=search]{
+    font-family:inherit;font-size:14px;color:var(--ink);background:#fff;
+    border:1px solid var(--rule);border-radius:3px;padding:7px 9px;min-width:132px
+  }
+  input[type=search]{min-width:180px}
+  select:focus-visible,input:focus-visible,th button:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+  .count{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--muted);padding-bottom:8px}
+  .count b{color:var(--accel);font-weight:600}
+  .reset{
+    background:none;border:1px solid var(--rule);border-radius:3px;padding:7px 11px;
+    font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer
+  }
+  .reset:hover{border-color:var(--muted);color:var(--ink)}
+
+  /* ---------- 表格 ---------- */
+  main{padding:22px 0 60px}
+  .table-card{background:var(--surface);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+  .scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:940px}
+  thead th{
+    background:#F7F9FB;border-bottom:1px solid var(--rule);
+    text-align:right;padding:0;white-space:nowrap;position:sticky;top:0
+  }
+  thead th:first-child,thead th.txt{text-align:left}
+  th button{
+    all:unset;cursor:pointer;display:block;width:100%;padding:11px 12px;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);text-align:inherit
+  }
+  th button:hover{color:var(--ink);background:#EEF2F6}
+  th.sorted button{color:var(--accel)}
+  th .arrow{font-size:9px;margin-left:3px}
+  tbody td{padding:11px 12px;border-bottom:1px solid var(--rule-soft);text-align:right;white-space:nowrap}
+  tbody td.txt{text-align:left}
+  tbody tr:hover{background:#FAFCFD}
+  .rank{color:#9AA5B1;font-family:"IBM Plex Mono",monospace;font-size:12px}
+  .ticker{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:14px}
+  .cname{font-weight:500}
+  .cname a{color:inherit;text-decoration:none;border-bottom:1px solid transparent}
+  .cname a:hover{border-bottom-color:var(--muted)}
+  .chip{
+    display:inline-block;font-size:12px;padding:2px 8px;border-radius:2px;
+    background:#EEF2F6;color:#4A5665;white-space:nowrap
+  }
+  .chip.mkt-otc{background:#EAF0EA;color:#4A6350}
+  .pct{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-size:14px}
+  .pct.up{color:var(--accel);font-weight:500}
+  .ratio{
+    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:14.5px;color:var(--accel);
+    background:var(--accel-soft);padding:2px 8px;border-radius:2px
+  }
+  /* 連續加速月數：用實心方塊數量表示，一眼看出訊號持續性 */
+  .streak{display:inline-flex;gap:2px;align-items:center;justify-content:flex-end}
+  .streak s{width:6px;height:13px;background:var(--base);opacity:.32;text-decoration:none;border-radius:1px}
+  .streak s.on{opacity:1}
+  .streak.hot s.on{background:var(--accel)}
+  .streak .n{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--muted);margin-left:5px;min-width:14px}
+  .streak.hot .n{color:var(--accel);font-weight:600}
+
+  /* ---------- 簽名元素：加速幅度視覺條 ---------- */
+  .gapbar{position:relative;height:16px;width:150px;display:inline-block;vertical-align:middle}
+  .gapbar .track{position:absolute;left:0;right:0;top:7px;height:2px;background:var(--rule-soft)}
+  .gapbar .span{position:absolute;top:7px;height:2px;background:var(--accel);opacity:.75}
+  .gapbar .m{position:absolute;top:3px;width:2px;height:10px}
+  .gapbar .m.base{background:var(--base)}
+  .gapbar .m.cur{background:var(--accel);width:3px;top:1px;height:14px}
+  .legend{
+    display:flex;gap:16px;align-items:center;padding:10px 14px;background:#F7F9FB;
+    border-top:1px solid var(--rule);font-size:12px;color:var(--muted);flex-wrap:wrap
+  }
+  .legend i{display:inline-block;width:3px;height:11px;margin-right:5px;vertical-align:-1px}
+
+  .state{padding:56px 20px;text-align:center;color:var(--muted)}
+  .state b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px;font-weight:500}
+  .state code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:#EEF2F6;padding:2px 6px;border-radius:2px}
+  .demo-flag{
+    background:#FFF6E5;border:1px solid #E8D5A8;color:#7A5B14;font-size:13px;
+    padding:10px 14px;border-radius:3px;margin-bottom:16px
+  }
+  footer{border-top:1px solid var(--rule);padding:20px 0 0;margin-top:26px;font-size:12.5px;color:var(--muted)}
+  footer a{color:var(--muted)}
+  @media (max-width:640px){
+    .stat{padding-right:20px;margin-right:20px}
+    .count{margin-left:0;width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="wrap">
+    <div class="eyebrow">
+      <span><span class="dot"></span>資料年月 <span id="dataYm" class="mono">—</span></span>
+      <span>更新於 <span id="updatedAt" class="mono">—</span></span>
+      <span id="windowNote">每月 1–10 日自動更新</span>
+    </div>
+    <h1>營收加速股</h1>
+    <p class="lede">上市＋上櫃公司月營收公告掃描。抓出「當月年增率明顯甩開累計年增率」的公司——成長動能正在增強，而非鈍化。</p>
+    <div class="rule-formula">篩選：累計年增率 &gt; 0　<b>且</b>　當月年增率 &gt; 1.3 × 累計年增率</div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">全市場家數</div><div class="v" id="statAll">—</div></div>
+      <div class="stat"><div class="k">符合加速條件</div><div class="v" id="statHit">—<small id="statPct"></small></div></div>
+      <div class="stat"><div class="k">最高加速倍數</div><div class="v" id="statTop">—<small>×</small></div></div>
+      <div class="stat"><div class="k">連續加速 2 個月以上</div><div class="v" id="statStreak">—<small id="statHist"></small></div></div>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-in">
+    <div class="field">
+      <label for="fMarket">市場</label>
+      <select id="fMarket"><option value="">全部</option></select>
+    </div>
+    <div class="field">
+      <label for="fSize">市值規模</label>
+      <select id="fSize"><option value="">全部</option></select>
+    </div>
+    <div class="field">
+      <label for="fInd">產業別</label>
+      <select id="fInd"><option value="">全部</option></select>
+    </div>
+    <div class="field">
+      <label for="fRatio">加速倍數下限</label>
+      <select id="fRatio">
+        <option value="1.3">1.3×（全部符合者）</option>
+        <option value="2">2×</option>
+        <option value="3">3×</option>
+        <option value="5">5×</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="fStreak">連續加速</label>
+      <select id="fStreak">
+        <option value="1">不限</option>
+        <option value="2">連 2 個月以上</option>
+        <option value="3">連 3 個月以上</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="fQ">搜尋代號／名稱</label>
+      <input type="search" id="fQ" placeholder="例：2330 或 台積">
+    </div>
+    <button class="reset" id="btnReset" type="button">清除條件</button>
+    <div class="count">顯示 <b id="cShown">0</b> / <span id="cTotal">0</span> 家</div>
+  </div>
+</div>
+
+<main class="wrap">
+  <div id="demoFlag" class="demo-flag" hidden>
+    尚未讀到 <code>data/latest.json</code>，目前顯示的是示範資料。等 GitHub Actions 跑完第一次抓取後，這裡會自動換成真實資料。
+  </div>
+
+  <div class="table-card">
+    <div class="scroll">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th class="txt"><button type="button" data-k="rank">#</button></th>
+            <th class="txt"><button type="button" data-k="code">股號</button></th>
+            <th class="txt"><button type="button" data-k="name">公司</button></th>
+            <th class="txt"><button type="button" data-k="industry">產業別</button></th>
+            <th class="txt"><button type="button" data-k="size_tier">市值規模</button></th>
+            <th><button type="button" data-k="market_cap_k">市值(億)</button></th>
+            <th><button type="button" data-k="cum_yoy">累計年增</button></th>
+            <th><button type="button" data-k="cur_yoy">當月年增</button></th>
+            <th class="sorted"><button type="button" data-k="accel_ratio">加速倍數<span class="arrow">▼</span></button></th>
+            <th><button type="button" data-k="streak">連續加速</button></th>
+            <th class="txt"><button type="button" data-k="gap">加速幅度</button></th>
+            <th><button type="button" data-k="cur_revenue_k">當月營收(億)</button></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <span><i style="background:#3C5A73"></i>累計年增率</span>
+      <span><i style="background:#C4283A"></i>當月年增率</span>
+      <span>兩點距離＝動能加速的幅度，越寬代表本月甩開累計基準越多。</span>
+      <span style="margin-left:auto">連續加速方塊＝連幾個月都在名單內，2 個月以上轉紅；歷史需逐月累積，首月起算皆為 1。</span>
+    </div>
+    <div id="empty" class="state" hidden><b>目前條件下沒有符合的公司</b>放寬加速倍數或改選其他產業試試。</div>
+  </div>
+
+  <footer>
+    資料來源：<a href="https://openapi.twse.com.tw/" target="_blank" rel="noopener">臺灣證券交易所 OpenAPI</a>、<a href="https://www.tpex.org.tw/openapi/" target="_blank" rel="noopener">證券櫃檯買賣中心 OpenAPI</a>。
+    營收數字為各公司自行申報之合併營收。本頁為個人研究工具，所有數據與篩選結果僅供參考，非投資建議，請自行查證並自負風險。
+  </footer>
+</main>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  let ROWS = [], SORT = {k:'accel_ratio', dir:-1};
+
+  // 讀不到真實資料時的示範資料，方便你在本機先看版面
+  const DEMO = {
+    data_ym:'115/07（示範）', updated_at:'—', count_all:1732, count_accelerating:6,
+    count_streak_2plus:3, history_months:4,
+    accelerating:[
+      {code:'3661',name:'示範半導體',market:'上市',industry:'半導體業',size_tier:'大型股(千億+)',market_cap_k:120000000,cur_revenue_k:11272216,cur_yoy:87.58,cum_yoy:40.26,accel_ratio:2.17,streak:4},
+      {code:'6285',name:'示範零組件',market:'上櫃',industry:'電子零組件業',size_tier:'中大型股(百億-千億)',market_cap_k:32000000,cur_revenue_k:4180000,cur_yoy:55.20,cum_yoy:12.40,accel_ratio:4.45,streak:1},
+      {code:'2404',name:'示範光電',market:'上市',industry:'光電業',size_tier:'中型股(30-100億)',market_cap_k:6200000,cur_revenue_k:880000,cur_yoy:33.10,cum_yoy:8.90,accel_ratio:3.72,streak:2},
+      {code:'8069',name:'示範資服',market:'上櫃',industry:'資訊服務業',size_tier:'小型股(<30億)',market_cap_k:2100000,cur_revenue_k:210000,cur_yoy:41.80,cum_yoy:19.30,accel_ratio:2.17,streak:1},
+      {code:'1712',name:'示範化工',market:'上市',industry:'化學工業',size_tier:'中型股(30-100億)',market_cap_k:4800000,cur_revenue_k:1520000,cur_yoy:22.40,cum_yoy:15.10,accel_ratio:1.48,streak:3},
+      {code:'4737',name:'示範生技',market:'上櫃',industry:'生技醫療業',size_tier:'小型股(<30億)',market_cap_k:1500000,cur_revenue_k:96000,cur_yoy:18.60,cum_yoy:13.20,accel_ratio:1.41,streak:1}
+    ]
+  };
+
+  const fmtPct = v => (v==null?'—':(v>0?'+':'')+v.toFixed(2)+'%');
+  const toYi = v => v==null?null:v/100000;            // 千元 → 億元
+  const fmtYi = v => v==null?'—':toYi(v).toLocaleString('zh-TW',{maximumFractionDigits:1});
+
+  function load(){
+    fetch('data/latest.json',{cache:'no-store'})
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => render(d,false))
+      .catch(() => render(DEMO,true));
+  }
+
+  function render(d, isDemo){
+    $('#demoFlag').hidden = !isDemo;
+    $('#dataYm').textContent = d.data_ym || '—';
+    $('#updatedAt').textContent = d.updated_at || '—';
+    $('#statAll').textContent = (d.count_all||0).toLocaleString();
+    $('#statHit').firstChild.nodeValue = (d.count_accelerating||0).toLocaleString();
+    const pct = d.count_all ? (d.count_accelerating/d.count_all*100) : 0;
+    $('#statPct').textContent = ' ／占 '+pct.toFixed(1)+'%';
+
+    ROWS = (d.accelerating||[]).map(r => Object.assign({}, r, {
+      gap: (r.cur_yoy!=null && r.cum_yoy!=null) ? r.cur_yoy - r.cum_yoy : null
+    }));
+    const top = ROWS.reduce((m,r)=>Math.max(m, r.accel_ratio||0), 0);
+    $('#statTop').firstChild.nodeValue = top ? top.toFixed(1) : '—';
+    $('#statStreak').firstChild.nodeValue = (d.count_streak_2plus!=null ? d.count_streak_2plus : 0).toLocaleString();
+    $('#statHist').textContent = ' ／已累積 '+(d.history_months||1)+' 期';
+    $('#cTotal').textContent = ROWS.length;
+
+    fillSelect('#fMarket', ROWS.map(r=>r.market));
+    fillSelect('#fSize', ROWS.map(r=>r.size_tier));
+    fillSelect('#fInd', ROWS.map(r=>r.industry));
+    draw();
+  }
+
+  function fillSelect(sel, vals){
+    const el = $(sel), keep = el.value;
+    const uniq = [...new Set(vals.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+    el.innerHTML = '<option value="">全部</option>' + uniq.map(v=>`<option>${v}</option>`).join('');
+    el.value = keep;
+  }
+
+  function filtered(){
+    const m=$('#fMarket').value, s=$('#fSize').value, i=$('#fInd').value,
+          r=parseFloat($('#fRatio').value), k=parseInt($('#fStreak').value,10),
+          q=$('#fQ').value.trim().toLowerCase();
+    return ROWS.filter(x =>
+      (!m || x.market===m) && (!s || x.size_tier===s) && (!i || x.industry===i) &&
+      (!r || (x.accel_ratio||0) >= r) &&
+      (!k || (x.streak||1) >= k) &&
+      (!q || (x.code||'').toLowerCase().includes(q) || (x.name||'').toLowerCase().includes(q))
+    );
+  }
+
+  // 連續加速：最多畫6格，超過用數字表示；≥2個月轉紅表示訊號有延續性
+  function streakCell(n){
+    n = n || 1;
+    const cap = Math.min(n, 6);
+    let sq = '';
+    for(let i=0;i<6;i++) sq += `<s class="${i<cap?'on':''}"></s>`;
+    return `<span class="streak ${n>=2?'hot':''}" title="連續 ${n} 個月符合加速條件">${sq}<span class="n">${n}</span></span>`;
+  }
+
+  function draw(){
+    let rows = filtered();
+    const k = SORT.k, dir = SORT.dir;
+    if(k !== 'rank'){
+      rows.sort((a,b)=>{
+        const av=a[k], bv=b[k];
+        if(av==null) return 1; if(bv==null) return -1;
+        return (typeof av==='number') ? (av-bv)*dir : String(av).localeCompare(String(bv),'zh-Hant')*dir;
+      });
+    }
+    $('#cShown').textContent = rows.length;
+    $('#empty').hidden = rows.length>0;
+
+    // 視覺條共用尺規：以目前畫面最大當月年增率為滿格
+    const scale = Math.max(...rows.map(r=>r.cur_yoy||0), 10);
+    const pos = v => Math.max(0, Math.min(100, (v/scale)*100));
+
+    $('#tbody').innerHTML = rows.map((r,idx)=>{
+      const pBase = pos(r.cum_yoy||0), pCur = pos(r.cur_yoy||0);
+      return `<tr>
+        <td class="txt rank">${idx+1}</td>
+        <td class="txt ticker">${r.code||''}</td>
+        <td class="txt cname"><a href="https://tw.stock.yahoo.com/quote/${r.code}/revenue" target="_blank" rel="noopener">${r.name||''}</a></td>
+        <td class="txt"><span class="chip">${r.industry||'—'}</span></td>
+        <td class="txt"><span class="chip ${r.market==='上櫃'?'mkt-otc':''}">${r.market||''} · ${r.size_tier||'未知'}</span></td>
+        <td class="pct">${fmtYi(r.market_cap_k)}</td>
+        <td class="pct">${fmtPct(r.cum_yoy)}</td>
+        <td class="pct up">${fmtPct(r.cur_yoy)}</td>
+        <td><span class="ratio">${r.accel_ratio!=null?r.accel_ratio.toFixed(2)+'×':'—'}</span></td>
+        <td>${streakCell(r.streak)}</td>
+        <td class="txt">
+          <span class="gapbar" title="累計 ${fmtPct(r.cum_yoy)} → 當月 ${fmtPct(r.cur_yoy)}">
+            <span class="track"></span>
+            <span class="span" style="left:${pBase}%;width:${Math.max(0,pCur-pBase)}%"></span>
+            <span class="m base" style="left:${pBase}%"></span>
+            <span class="m cur" style="left:${pCur}%"></span>
+          </span>
+        </td>
+        <td class="pct">${fmtYi(r.cur_revenue_k)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.querySelectorAll('th button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const k = btn.dataset.k;
+      SORT = (SORT.k===k) ? {k, dir:SORT.dir*-1} : {k, dir:(k==='code'||k==='name'||k==='industry'||k==='size_tier')?1:-1};
+      document.querySelectorAll('th').forEach(th=>th.classList.remove('sorted'));
+      document.querySelectorAll('th .arrow').forEach(a=>a.remove());
+      btn.closest('th').classList.add('sorted');
+      btn.insertAdjacentHTML('beforeend', `<span class="arrow">${SORT.dir<0?'▼':'▲'}</span>`);
+      draw();
+    });
+  });
+  ['#fMarket','#fSize','#fInd','#fRatio','#fStreak','#fQ'].forEach(s=>$(s).addEventListener('input', draw));
+  $('#btnReset').addEventListener('click', ()=>{
+    ['#fMarket','#fSize','#fInd','#fQ'].forEach(s=>$(s).value='');
+    $('#fRatio').value='1.3'; $('#fStreak').value='1'; draw();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
