@@ -1,0 +1,41 @@
+# 放置路徑：你的repo根目錄下的 .github/workflows/monthly-revenue-scan.yml
+#
+# 排程說明：
+# - cron是UTC時間，'0 1 1-10 * *' = 每天UTC 01:00 = 台北時間09:00，只在每月1~10日觸發
+# - 也保留 workflow_dispatch，可以在GitHub網頁上手動點擊執行，方便測試
+
+name: Monthly Revenue Accelerating Stock Scan
+
+on:
+  schedule:
+    - cron: '0 1 1-10 * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # 需要寫入權限才能把抓到的資料commit回repo
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run scan script
+        run: python scripts/fetch_data.py
+
+      - name: Commit and push results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "chore: update monthly revenue scan $(date -u +%Y-%m-%d)"
+          git push
