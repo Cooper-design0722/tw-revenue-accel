@@ -38,7 +38,7 @@ FINMIND_URL = "https://api.finmindtrade.com/api/v4/data"
 FINMIND_TOKEN = os.environ.get("FINMIND_TOKEN", "")
 
 TWSE_REVENUE_URL = "https://openapi.twse.com.tw/v1/opendata/t187ap05_L"
-TPEX_REVENUE_URL = "https://www.tpex.org.tw/openapi/v1/opendata/t187ap05_O"   # ⚠️ 端點待驗證
+TPEX_REVENUE_URL = "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap05_O"   # 上櫃月營收（已查證）
 
 OUTPUT_DIR = "data"
 HISTORY_DIR = os.path.join(OUTPUT_DIR, "history")
@@ -94,13 +94,14 @@ def build_universe() -> dict:
     ]:
         raw = fetch_json(url, f"{label}公司清單") or []
         for row in raw:
-            code = row.get("公司代號")
+            code = row.get("公司代號") or row.get("SecuritiesCompanyCode")
             if code:
+                code = str(code).strip()
                 universe[code] = {
                     "code": code,
-                    "name": row.get("公司名稱"),
+                    "name": row.get("公司名稱") or row.get("CompanyName"),
                     "market": market,
-                    "industry": row.get("產業別"),
+                    "industry": row.get("產業別") or row.get("Industry") or "未分類",
                 }
         print(f"[OK] {label}：{len(raw)} 家")
     return universe
