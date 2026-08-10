@@ -47,6 +47,7 @@ HISTORY_DIR = os.path.join(OUTPUT_DIR, "history")
 
 ACCEL_MULTIPLIER = 1.3
 MIN_CUM_YOY = 0
+ACCEL_MAX_RATIO = 50.0   # 加速倍數超過50倍視為極端值排除（通常是累計年增率趨近0，分母太小造成倍數失真）
 
 # 動能延續股：不看倍數關係，直接看兩個年增率是否都維持在高檔。
 # 適合抓「已經在噴、還沒噴完」的中大型主流股（例如金居、德宏這類）；
@@ -165,13 +166,25 @@ def normalize_revenue(raw: list, market: str) -> list:
 
 
 def screen_accelerating(rows: list) -> list:
+    """
+    加速股：累計YoY>0 且 當月YoY > 1.3×累計YoY。
+    加一道濾網：倍數超過 ACCEL_MAX_RATIO 直接排除——這種案例通常是累計YoY
+    趨近於0（例如百和累計只有+0.03%），分母太小讓倍數在數學上噴出幾百倍，
+    不是真的「加速」，是統計假象。
+    """
     result = []
+    excluded_extreme = 0
     for r in rows:
         if r["cum_yoy"] > MIN_CUM_YOY and r["cur_yoy"] > ACCEL_MULTIPLIER * r["cum_yoy"]:
+            ratio = round(r["cur_yoy"] / r["cum_yoy"], 2)
+            if ratio > ACCEL_MAX_RATIO:
+                excluded_extreme += 1
+                continue
             r2 = dict(r)
-            r2["accel_ratio"] = round(r["cur_yoy"] / r["cum_yoy"], 2)
+            r2["accel_ratio"] = ratio
             result.append(r2)
     result.sort(key=lambda x: x["accel_ratio"], reverse=True)
+    print(f"     濾除：倍數>{ACCEL_MAX_RATIO:.0f}倍的極端值 {excluded_extreme} 家")
     return result
 
 
