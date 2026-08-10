@@ -369,6 +369,26 @@ def main():
     data_ym = rows[0]["data_ym"]
     current_key = ym_key(data_ym)
 
+    # ---- 期別一致性檢查 ----
+    # 申報期間內（1~10日）公司是陸續申報的：還沒交7月的公司，API 仍回傳6月舊數字。
+    # 不能只用第一筆資料的年月當標題，否則會把新舊月份混在同一份清單卻標成同一期。
+    # 做法：統計所有公司實際落在哪個月，抓「多數決」當本次的目標期別，
+    # 只保留跟目標期別相同的公司，其餘（還沒申報最新月份的）先跳過，等它們自己申報後
+    # 之後幾天重跑會自然補上，不會被錯誤地標成「已加速」或「已延續」。
+    period_counts = {}
+    for r in rows:
+        k = ym_key(r["data_ym"])
+        period_counts[k] = period_counts.get(k, 0) + 1
+    current_key = max(period_counts, key=period_counts.get)
+    data_ym = next(r["data_ym"] for r in rows if ym_key(r["data_ym"]) == current_key)
+
+    stale_count = sum(c for k, c in period_counts.items() if k != current_key)
+    print(f"\n=== 期別檢查 ===")
+    print(f"     期別分布：{dict(sorted(period_counts.items(), key=lambda x:-x[1]))}")
+    print(f"     採用期別 {data_ym}（多數決），排除尚未申報最新月份的公司 {stale_count} 家")
+
+    rows = [r for r in rows if ym_key(r["data_ym"]) == current_key]
+
     print("\n=== 計算市值 ===")
     cap_map = build_market_cap_map()
     matched = 0
