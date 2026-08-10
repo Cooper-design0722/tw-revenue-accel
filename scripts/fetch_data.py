@@ -55,6 +55,11 @@ MIN_CUM_YOY = 0
 MOMENTUM_CUR_YOY_MIN = 50.0
 MOMENTUM_CUM_YOY_MIN = 40.0
 
+# 資料品質濾網：排除「去年同期基期太小」造成的百分比失真
+# （例如業外一次性認列、資產處分，讓年增率衝到幾千%、幾萬%，這不是持續性動能）
+MOMENTUM_MAX_YOY_CAP = 300.0      # 當月或累計YoY只要有一個超過300%，視為極端值直接排除
+MOMENTUM_MIN_REVENUE_K = 100000   # 當月營收至少1億元（單位千元），濾掉規模太小、百分比容易被雜訊放大的公司
+
 
 # ==================== 共用工具 ====================
 
@@ -174,15 +179,29 @@ def screen_momentum(rows: list) -> list:
     """
     動能延續股：當月YoY與累計YoY都超過絕對門檻，不看兩者的倍數關係。
     依累計YoY排序（越高代表強勢維持越久），當月YoY當第二排序依據。
-    另外算一個 momentum_score 給前端排序/顯示用，等權重平均兩個年增率。
+
+    另外加兩道資料品質濾網，排除基期過低造成的百分比失真：
+      1. YoY 超過 MOMENTUM_MAX_YOY_CAP（例如去年同期業外一次性認列、幾乎沒營收）
+      2. 當月營收規模低於 MOMENTUM_MIN_REVENUE_K（規模太小，百分比容易被雜訊放大）
+    這兩種公司即使數字符合門檻，代表的多半不是「持續性動能」，是統計假象。
     """
     result = []
+    excluded_extreme, excluded_small = 0, 0
     for r in rows:
-        if r["cur_yoy"] > MOMENTUM_CUR_YOY_MIN and r["cum_yoy"] > MOMENTUM_CUM_YOY_MIN:
-            r2 = dict(r)
-            r2["momentum_score"] = round((r["cur_yoy"] + r["cum_yoy"]) / 2, 1)
-            result.append(r2)
+        if not (r["cur_yoy"] > MOMENTUM_CUR_YOY_MIN and r["cum_yoy"] > MOMENTUM_CUM_YOY_MIN):
+            continue
+        if r["cur_yoy"] > MOMENTUM_MAX_YOY_CAP or r["cum_yoy"] > MOMENTUM_MAX_YOY_CAP:
+            excluded_extreme += 1
+            continue
+        if not r["cur_revenue_k"] or r["cur_revenue_k"] < MOMENTUM_MIN_REVENUE_K:
+            excluded_small += 1
+            continue
+        r2 = dict(r)
+        r2["momentum_score"] = round((r["cur_yoy"] + r["cum_yoy"]) / 2, 1)
+        result.append(r2)
     result.sort(key=lambda x: (x["cum_yoy"], x["cur_yoy"]), reverse=True)
+    print(f"     濾除：極端值(YoY>{MOMENTUM_MAX_YOY_CAP:.0f}%) {excluded_extreme} 家、"
+          f"規模過小(<{MOMENTUM_MIN_REVENUE_K/10000:.0f}千萬) {excluded_small} 家")
     return result
 
 
