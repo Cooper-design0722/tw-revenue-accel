@@ -37,7 +37,7 @@
 
   /* ---------- 頁首 ---------- */
   .band{background:var(--band);color:#EDF1F5;padding:26px 0 22px}
-  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  .wrap{max-width:1360px;margin:0 auto;padding:0 20px}
   .eyebrow{
     font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.14em;
     text-transform:uppercase;color:#8FA3B5;display:flex;gap:14px;flex-wrap:wrap;align-items:center
@@ -78,7 +78,7 @@
     background:var(--surface);border-bottom:1px solid var(--rule);
     position:sticky;top:0;z-index:20;box-shadow:0 1px 0 rgba(17,24,33,.03)
   }
-  .toolbar-in{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:14px 20px;max-width:1180px;margin:0 auto}
+  .toolbar-in{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:14px 20px;max-width:1360px;margin:0 auto}
   .field{display:flex;flex-direction:column;gap:4px}
   .field label{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
   select,input[type=search]{
@@ -99,54 +99,54 @@
   main{padding:22px 0 60px}
   .table-card{background:var(--surface);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
   .scroll{overflow-x:auto}
-  table{width:100%;border-collapse:collapse;min-width:940px}
+  table{width:100%;border-collapse:collapse;min-width:760px;table-layout:auto}
   thead th{
     background:#F7F9FB;border-bottom:1px solid var(--rule);
     text-align:right;padding:0;white-space:nowrap;position:sticky;top:0
   }
   thead th:first-child,thead th.txt{text-align:left}
   th button{
-    all:unset;cursor:pointer;display:block;width:100%;padding:11px 12px;
-    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;
+    all:unset;cursor:pointer;display:block;width:100%;padding:9px 8px;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.06em;
     text-transform:uppercase;color:var(--muted);text-align:inherit
   }
   th button:hover{color:var(--ink);background:#EEF2F6}
   th.sorted button{color:var(--accel)}
-  th .arrow{font-size:9px;margin-left:3px}
-  tbody td{padding:11px 12px;border-bottom:1px solid var(--rule-soft);text-align:right;white-space:nowrap}
+  th .arrow{font-size:8px;margin-left:2px}
+  tbody td{padding:8px 8px;border-bottom:1px solid var(--rule-soft);text-align:right;white-space:nowrap;font-size:13px}
   tbody td.txt{text-align:left}
   tbody tr:hover{background:#FAFCFD}
-  .rank{color:#9AA5B1;font-family:"IBM Plex Mono",monospace;font-size:12px}
-  .ticker{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:14px}
-  .cname{font-weight:500}
+  .rank{color:#9AA5B1;font-family:"IBM Plex Mono",monospace;font-size:11px}
+  .ticker{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px}
+  .cname{font-weight:500;max-width:110px;overflow:hidden;text-overflow:ellipsis}
   .cname a{color:inherit;text-decoration:none;border-bottom:1px solid transparent}
   .cname a:hover{border-bottom-color:var(--muted)}
   .chip{
-    display:inline-block;font-size:12px;padding:2px 8px;border-radius:2px;
+    display:inline-block;font-size:11px;padding:2px 6px;border-radius:2px;
     background:#EEF2F6;color:#4A5665;white-space:nowrap
   }
   .chip.mkt-otc{background:#EAF0EA;color:#4A6350}
-  .pct{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-size:14px}
+  .pct{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-size:13px}
   .pct.up{color:var(--accel);font-weight:500}
   .ratio{
-    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:14.5px;color:var(--accel);
-    background:var(--accel-soft);padding:2px 8px;border-radius:2px
+    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;color:var(--accel);
+    background:var(--accel-soft);padding:2px 6px;border-radius:2px
   }
   /* 連續加速月數：用實心方塊數量表示，一眼看出訊號持續性 */
-  .streak{display:inline-flex;gap:2px;align-items:center;justify-content:flex-end}
-  .streak s{width:6px;height:13px;background:var(--base);opacity:.32;text-decoration:none;border-radius:1px}
+  .streak{display:inline-flex;gap:1px;align-items:center;justify-content:flex-end}
+  .streak s{width:5px;height:11px;background:var(--base);opacity:.32;text-decoration:none;border-radius:1px}
   .streak s.on{opacity:1}
   .streak.hot s.on{background:var(--accel)}
-  .streak .n{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--muted);margin-left:5px;min-width:14px}
+  .streak .n{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);margin-left:4px;min-width:12px}
   .streak.hot .n{color:var(--accel);font-weight:600}
 
   /* ---------- 簽名元素：加速幅度視覺條 ---------- */
-  .gapbar{position:relative;height:16px;width:150px;display:inline-block;vertical-align:middle}
-  .gapbar .track{position:absolute;left:0;right:0;top:7px;height:2px;background:var(--rule-soft)}
-  .gapbar .span{position:absolute;top:7px;height:2px;background:var(--accel);opacity:.75}
-  .gapbar .m{position:absolute;top:3px;width:2px;height:10px}
+  .gapbar{position:relative;height:14px;width:80px;display:inline-block;vertical-align:middle}
+  .gapbar .track{position:absolute;left:0;right:0;top:6px;height:2px;background:var(--rule-soft)}
+  .gapbar .span{position:absolute;top:6px;height:2px;background:var(--accel);opacity:.75}
+  .gapbar .m{position:absolute;top:2px;width:2px;height:9px}
   .gapbar .m.base{background:var(--base)}
-  .gapbar .m.cur{background:var(--accel);width:3px;top:1px;height:14px}
+  .gapbar .m.cur{background:var(--accel);width:2px;top:0;height:13px}
   .legend{
     display:flex;gap:16px;align-items:center;padding:10px 14px;background:#F7F9FB;
     border-top:1px solid var(--rule);font-size:12px;color:var(--muted);flex-wrap:wrap
