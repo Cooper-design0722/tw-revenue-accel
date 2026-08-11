@@ -141,6 +141,30 @@ def prev_ym(key: str) -> str:
 
 # ==================== 月營收 ====================
 
+def latest_period_filter(rows: list, label: str):
+    """
+    只保留「該市場自己」已經申報到最新月份的公司，還沒申報的先排除
+    （之後幾天重跑會自然補上）。
+
+    這裡刻意只在單一市場內部判斷最新期別，不能跨市場一起算——上市、上櫃是
+    兩個獨立的申報系統，進度本來就不同步。如果合併後才判斷，進度較快的市場
+    會把進度較慢的市場「整批」判定成落後而排除掉，即使後者的資料完全正常，
+    只是還沒輪到最新月份而已。
+    """
+    if not rows:
+        return rows, None
+    period_counts = {}
+    for r in rows:
+        k = ym_key(r["data_ym"])
+        period_counts[k] = period_counts.get(k, 0) + 1
+    current_key = max(period_counts.keys())
+    data_ym = next(r["data_ym"] for r in rows if ym_key(r["data_ym"]) == current_key)
+    stale = sum(c for k, c in period_counts.items() if k != current_key)
+    print(f"     [{label}] 期別分布：{dict(sorted(period_counts.items(), key=lambda x:-x[1]))}")
+    print(f"     [{label}] 採用最新期別 {data_ym}，排除尚未申報最新月份的公司 {stale} 家")
+    return [r for r in rows if ym_key(r["data_ym"]) == current_key], data_ym
+
+
 def normalize_revenue(raw: list, market: str) -> list:
     """上市與上櫃的欄位命名可能不同，統一在這裡吸收差異"""
     out = []
@@ -366,28 +390,24 @@ def main():
     if not tpex_rows:
         print("[WARN] 上櫃資料為空，本次只會有上市公司。請把上面的欄位範例貼出來檢查。")
 
-    data_ym = rows[0]["data_ym"]
-    current_key = ym_key(data_ym)
+    print("=== 期別檢查（上市、上櫃分開判斷，避免互相排擠） ===")
+    twse_rows, data_ym_twse = latest_period_filter(twse_rows, "上市")
+    tpex_rows, data_ym_tpex = latest_period_filter(tpex_rows, "上櫃")
+    rows = twse_rows + tpex_rows
 
-    # ---- 期別一致性檢查 ----
-    # 申報期間內（1~10日）公司是陸續申報的：還沒交最新月份的公司，API 仍回傳舊數字。
-    # 正確做法：只要有任何公司已經申報到最新月份，那個月就是目前該採用的期別——
-    # 還停在舊月份的公司不是異常，只是還沒申報，本來就該排除，之後幾天重跑會自然補上。
-    # （原本用「多數決」是錯的：月初到月中，舊月份公司數必然大於新月份，多數決會
-    #   系統性地選到舊期別，反而把已經正確申報最新月份的公司排除掉，方向完全相反。）
-    period_counts = {}
-    for r in rows:
-        k = ym_key(r["data_ym"])
-        period_counts[k] = period_counts.get(k, 0) + 1
-    current_key = max(period_counts.keys())   # 取最新（字串最大＝時間最晚），不是取最多筆的
-    data_ym = next(r["data_ym"] for r in rows if ym_key(r["data_ym"]) == current_key)
+    if not rows:
+        print("[ERROR] 過濾後沒有任何可用資料，中止本次執行（不覆蓋既有檔案）")
+        return
 
-    stale_count = sum(c for k, c in period_counts.items() if k != current_key)
-    print(f"\n=== 期別檢查 ===")
-    print(f"     期別分布：{dict(sorted(period_counts.items(), key=lambda x:-x[1]))}")
-    print(f"     採用最新期別 {data_ym}，排除尚未申報最新月份的公司 {stale_count} 家")
-
-    rows = [r for r in rows if ym_key(r["data_ym"]) == current_key]
+    # 兩個市場的最新期別通常會一致；不一致時（例如上市已到7月、上櫃還在6月）
+    # 直接把兩個都標在資料年月欄位，讓網頁上看得出來目前是混合期別，不會誤導成單一期別
+    if data_ym_twse and data_ym_tpex and ym_key(data_ym_twse) != ym_key(data_ym_tpex):
+        data_ym = f"上市{data_ym_twse}／上櫃{data_ym_tpex}"
+        current_key = max(ym_key(data_ym_twse), ym_key(data_ym_tpex))
+        print(f"     [注意] 兩市場期別不同步：上市 {data_ym_twse}、上櫃 {data_ym_tpex}")
+    else:
+        data_ym = data_ym_twse or data_ym_tpex
+        current_key = ym_key(data_ym)
 
     print("\n=== 計算市值 ===")
     cap_map = build_market_cap_map()
