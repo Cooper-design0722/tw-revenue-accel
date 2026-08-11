@@ -370,22 +370,22 @@ def main():
     current_key = ym_key(data_ym)
 
     # ---- 期別一致性檢查 ----
-    # 申報期間內（1~10日）公司是陸續申報的：還沒交7月的公司，API 仍回傳6月舊數字。
-    # 不能只用第一筆資料的年月當標題，否則會把新舊月份混在同一份清單卻標成同一期。
-    # 做法：統計所有公司實際落在哪個月，抓「多數決」當本次的目標期別，
-    # 只保留跟目標期別相同的公司，其餘（還沒申報最新月份的）先跳過，等它們自己申報後
-    # 之後幾天重跑會自然補上，不會被錯誤地標成「已加速」或「已延續」。
+    # 申報期間內（1~10日）公司是陸續申報的：還沒交最新月份的公司，API 仍回傳舊數字。
+    # 正確做法：只要有任何公司已經申報到最新月份，那個月就是目前該採用的期別——
+    # 還停在舊月份的公司不是異常，只是還沒申報，本來就該排除，之後幾天重跑會自然補上。
+    # （原本用「多數決」是錯的：月初到月中，舊月份公司數必然大於新月份，多數決會
+    #   系統性地選到舊期別，反而把已經正確申報最新月份的公司排除掉，方向完全相反。）
     period_counts = {}
     for r in rows:
         k = ym_key(r["data_ym"])
         period_counts[k] = period_counts.get(k, 0) + 1
-    current_key = max(period_counts, key=period_counts.get)
+    current_key = max(period_counts.keys())   # 取最新（字串最大＝時間最晚），不是取最多筆的
     data_ym = next(r["data_ym"] for r in rows if ym_key(r["data_ym"]) == current_key)
 
     stale_count = sum(c for k, c in period_counts.items() if k != current_key)
     print(f"\n=== 期別檢查 ===")
     print(f"     期別分布：{dict(sorted(period_counts.items(), key=lambda x:-x[1]))}")
-    print(f"     採用期別 {data_ym}（多數決），排除尚未申報最新月份的公司 {stale_count} 家")
+    print(f"     採用最新期別 {data_ym}，排除尚未申報最新月份的公司 {stale_count} 家")
 
     rows = [r for r in rows if ym_key(r["data_ym"]) == current_key]
 
