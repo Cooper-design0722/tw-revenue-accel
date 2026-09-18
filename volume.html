@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>台股族群成交量能｜資金流向追蹤</title>
+<meta name="description" content="每個交易日盤後統計各族群成交金額佔比變化與放量倍數，看資金正往哪些族群集中。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFF2F5; --surface:#FFFFFF; --band:#16232F; --ink:#111821; --muted:#5F6A78;
+    --rule:#D7DDE4; --rule-soft:#E8ECF1;
+    --up:#C4283A; --up-soft:#F6E2E4; --down:#3C7A5A; --base:#3C5A73; --focus:#1F6FEB;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:"Noto Sans TC",system-ui,sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1360px;margin:0 auto;padding:0 20px}
+
+  .band{background:var(--band);color:#EDF1F5;padding:26px 0 22px}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:#8FA3B5;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--up);display:inline-block;margin-right:6px;vertical-align:middle}
+  .eyebrow a{color:#8FA3B5;text-decoration:none;border-bottom:1px solid #33465A}
+  .eyebrow a:hover{color:#EDF1F5}
+  h1{font-family:"Noto Serif TC",serif;font-weight:700;font-size:clamp(26px,4.2vw,40px);line-height:1.2;margin:10px 0 6px}
+  .lede{color:#A9B8C6;font-size:14px;max-width:48em;margin:0}
+  .stats{display:flex;flex-wrap:wrap;border-top:1px solid #2A3A4A;margin-top:20px;padding-top:16px}
+  .stat{padding-right:34px;margin-right:34px;border-right:1px solid #2A3A4A}
+  .stat:last-child{border-right:0}
+  .stat .k{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;color:#8FA3B5;text-transform:uppercase}
+  .stat .v{font-family:"IBM Plex Mono",monospace;font-size:23px;font-weight:600;color:#fff}
+  .stat .v small{font-size:12px;color:#8FA3B5;font-weight:400;margin-left:3px}
+
+  main{padding:22px 0 60px}
+  .card{background:var(--surface);border:1px solid var(--rule);border-radius:4px;margin-bottom:20px;overflow:hidden}
+  .card-head{padding:14px 16px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .card-head h2{font-size:15px;margin:0;font-weight:600}
+  .card-head .hint{font-size:12px;color:var(--muted);flex:1;min-width:200px}
+
+  .notice{background:#FFF6E5;border:1px solid #E8D5A8;color:#7A5B14;font-size:13px;padding:10px 14px;border-radius:3px;margin-bottom:16px}
+  .notice.err{background:#FDECEE;border-color:#E9C2C7;color:#8C2733}
+
+  /* ---------- 四象限散佈圖 ---------- */
+  .quad-wrap{padding:16px;position:relative}
+  .quad{position:relative;width:100%;height:440px;border:1px solid var(--rule-soft);background:
+    linear-gradient(90deg,transparent 49.85%,var(--rule) 49.85%,var(--rule) 50.15%,transparent 50.15%),
+    linear-gradient(0deg,transparent 49.85%,var(--rule) 49.85%,var(--rule) 50.15%,transparent 50.15%)}
+  .qlabel{position:absolute;font-size:11px;color:#9AA5B1;font-family:"IBM Plex Mono",monospace;letter-spacing:.06em;pointer-events:none}
+  .qlabel.tr{top:8px;right:10px;color:#C98A93} .qlabel.tl{top:8px;left:10px}
+  .qlabel.br{bottom:8px;right:10px} .qlabel.bl{bottom:8px;left:10px;color:#7FA893}
+  .axis-x{text-align:center;font-size:11.5px;color:var(--muted);margin-top:8px;font-family:"IBM Plex Mono",monospace}
+  .axis-y{position:absolute;left:-6px;top:50%;transform:rotate(-90deg) translateX(-50%);transform-origin:left center;font-size:11.5px;color:var(--muted);font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+  .bub{position:absolute;border-radius:50%;transform:translate(-50%,-50%);cursor:pointer;border:1.5px solid #fff;transition:opacity .12s}
+  .bub.pos{background:rgba(196,40,58,.55)} .bub.neg{background:rgba(60,122,90,.5)}
+  .bub:hover{opacity:.75}
+  .bub-tag{position:absolute;transform:translate(-50%,-50%);font-size:10.5px;color:var(--ink);pointer-events:none;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;font-weight:500}
+
+  table{width:100%;border-collapse:collapse;min-width:720px}
+  .scroll{overflow-x:auto}
+  thead th{background:#F7F9FB;border-bottom:1px solid var(--rule);text-align:right;padding:0;white-space:nowrap}
+  thead th.txt{text-align:left}
+  th button{all:unset;cursor:pointer;display:block;width:100%;padding:9px 10px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:inherit}
+  th button:hover{color:var(--ink);background:#EEF2F6}
+  th.sorted button{color:var(--up)}
+  th .arrow{font-size:8px;margin-left:2px}
+  tbody td{padding:8px 10px;border-bottom:1px solid var(--rule-soft);text-align:right;white-space:nowrap;font-size:13px}
+  tbody td.txt{text-align:left}
+  tbody tr:hover{background:#FAFCFD}
+  .num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  .pos{color:var(--up);font-weight:500} .neg{color:var(--down);font-weight:500}
+  .pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;padding:2px 7px;border-radius:2px}
+  .pill.pos{background:var(--up-soft);color:var(--up)} .pill.neg{background:#E7F0EA;color:var(--down)}
+  .sbar{position:relative;height:14px;width:110px;display:inline-block;vertical-align:middle;background:linear-gradient(90deg,transparent 49.6%,var(--rule) 49.6%,var(--rule) 50.4%,transparent 50.4%)}
+  .sbar span{position:absolute;top:4px;height:7px;border-radius:1px}
+  .sbar span.pos{background:var(--up);left:50%} .sbar span.neg{background:var(--down);right:50%}
+
+  .legend{display:flex;gap:16px;align-items:center;padding:10px 14px;background:#F7F9FB;border-top:1px solid var(--rule);font-size:12px;color:var(--muted);flex-wrap:wrap}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+  .state{padding:56px 20px;text-align:center;color:var(--muted)}
+  .state b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px;font-weight:500}
+  footer{border-top:1px solid var(--rule);padding:20px 0 0;margin-top:26px;font-size:12.5px;color:var(--muted)}
+  footer a{color:var(--muted)}
+  @media (max-width:640px){ .quad{height:340px} .stat{padding-right:20px;margin-right:20px} }
+</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="wrap">
+    <div class="eyebrow">
+      <span><span class="dot"></span>交易日 <span id="tradeDate" class="mono">—</span></span>
+      <span>累積 <span id="histDays" class="mono">—</span> 個交易日</span>
+      <span><a href="index.html">← 回月營收選股</a></span>
+    </div>
+    <h1>族群資金量能</h1>
+    <p class="lede">每個交易日盤後統計各族群成交金額。看的不是絕對金額，而是<b>佔全市場的比重變化</b>——大盤爆量時所有族群都放量，只有佔比能看出資金真正往哪裡集中。</p>
+    <div class="stats">
+      <div class="stat"><div class="k">全市場成交</div><div class="v" id="statTotal">—<small>億</small></div></div>
+      <div class="stat"><div class="k">族群數</div><div class="v" id="statCount">—</div></div>
+      <div class="stat"><div class="k">資金流入最強</div><div class="v" id="statTop" style="font-size:17px">—</div></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="notice" class="notice" hidden></div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>資金流向四象限</h2>
+      <span class="hint">橫軸＝佔比變化（近5日佔比 − 近20日佔比），越右代表資金越往此族群集中；縱軸＝放量倍數（近5日均量 ÷ 20日均量），越上代表越放量。泡泡大小＝近20日成交規模。</span>
+    </div>
+    <div class="quad-wrap">
+      <div class="quad" id="quad">
+        <span class="qlabel tr">資金集中 × 放量　← 最強</span>
+        <span class="qlabel tl">放量但資金分散</span>
+        <span class="qlabel br">相對抗跌 · 縮量</span>
+        <span class="qlabel bl">資金流出 × 縮量</span>
+      </div>
+      <div class="axis-x">← 資金流出　　佔比變化 (百分點)　　資金流入 →</div>
+    </div>
+    <div class="legend">
+      <span><i style="background:rgba(196,40,58,.55)"></i>佔比上升</span>
+      <span><i style="background:rgba(60,122,90,.5)"></i>佔比下降</span>
+      <span>只標示前 12 大族群名稱，避免文字重疊；滑鼠移到泡泡上可看完整數字。</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>族群量能明細</h2></div>
+    <div class="scroll">
+      <table id="tbl">
+        <thead><tr>
+          <th class="txt"><button type="button" data-k="rank">#</button></th>
+          <th class="txt"><button type="button" data-k="industry">族群</button></th>
+          <th class="sorted" id="thDelta"><button type="button" data-k="share_delta">佔比變化<span class="arrow">▼</span></button></th>
+          <th class="txt"><button type="button" data-k="gap">流向</button></th>
+          <th><button type="button" data-k="share_5d">近5日佔比</button></th>
+          <th><button type="button" data-k="share_20d">近20日佔比</button></th>
+          <th><button type="button" data-k="vol_ratio">放量倍數</button></th>
+          <th><button type="button" data-k="today_value">今日成交(億)</button></th>
+          <th><button type="button" data-k="value_20d">20日成交(億)</button></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div id="empty" class="state" hidden><b>尚無資料</b>等每日排程跑過後就會出現。</div>
+  </div>
+
+  <footer>
+    資料來源：臺灣證券交易所、證券櫃檯買賣中心公開資料。成交金額為各族群成分股加總。
+    本頁為個人研究工具，所有數據僅供參考，非投資建議，請自行查證並自負風險。
+  </footer>
+</main>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  let ROWS = [], DATA = null, SORT = {k:'share_delta', dir:-1};
+
+  const DEMO = {
+    trade_date:'2026-08-11（示範）', updated_at:'—', history_days:22, ready:true,
+    market_total_today:485000000000,
+    industries:[
+      {industry:'半導體業',today_value:186000000000,today_share:38.4,share_5d:37.2,share_20d:31.5,share_delta:5.7,vol_ratio:1.42,value_20d:2980000000000},
+      {industry:'電子零組件業',today_value:62000000000,today_share:12.8,share_5d:13.1,share_20d:11.2,share_delta:1.9,vol_ratio:1.24,value_20d:1050000000000},
+      {industry:'其他電子業',today_value:41000000000,today_share:8.5,share_5d:8.8,share_20d:8.1,share_delta:0.7,vol_ratio:1.09,value_20d:760000000000},
+      {industry:'光電業',today_value:28000000000,today_share:5.8,share_5d:5.6,share_20d:5.4,share_delta:0.2,vol_ratio:0.97,value_20d:510000000000},
+      {industry:'金融業',today_value:34000000000,today_share:7.0,share_5d:6.9,share_20d:7.8,share_delta:-0.9,vol_ratio:0.88,value_20d:730000000000},
+      {industry:'航運業',today_value:22000000000,today_share:4.5,share_5d:4.4,share_20d:6.3,share_delta:-1.9,vol_ratio:0.71,value_20d:590000000000},
+      {industry:'鋼鐵工業',today_value:11000000000,today_share:2.3,share_5d:2.4,share_20d:4.1,share_delta:-1.7,vol_ratio:0.64,value_20d:385000000000},
+      {industry:'生技醫療業',today_value:9000000000,today_share:1.9,share_5d:2.0,share_20d:2.6,share_delta:-0.6,vol_ratio:0.79,value_20d:244000000000}
+    ]
+  };
+
+  const toYi = v => v==null?null:v/1e8;   // 元 → 億元
+  const fmtYi = v => v==null?'—':toYi(v).toLocaleString('zh-TW',{maximumFractionDigits:0});
+  const fmtPP = v => v==null?'—':(v>0?'+':'')+v.toFixed(2);
+
+  function load(){
+    fetch('data/volume_latest.json',{cache:'no-store'})
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => render(d,false))
+      .catch(()=> render(DEMO,true));
+  }
+
+  function render(d, isDemo){
+    DATA = d;
+    ROWS = (d.industries||[]).slice();
+    $('#tradeDate').textContent = d.trade_date || '—';
+    $('#histDays').textContent = d.history_days || 0;
+    $('#statTotal').firstChild.nodeValue = fmtYi(d.market_total_today);
+    $('#statCount').textContent = ROWS.length;
+    const top = ROWS.filter(r=>r.share_delta!=null).sort((a,b)=>b.share_delta-a.share_delta)[0];
+    $('#statTop').textContent = top ? `${top.industry} ${fmtPP(top.share_delta)}pp` : '—';
+
+    const n = $('#notice');
+    if(isDemo){
+      n.hidden = false; n.className='notice';
+      n.innerHTML = '尚未讀到 <code>data/volume_latest.json</code>，目前顯示示範資料。等每日排程跑過後會自動換成真實資料。';
+    } else if(d.ready === false){
+      n.hidden = false; n.className='notice';
+      n.textContent = `資料累積中：目前 ${d.history_days} 個交易日，未滿 ${d.window_long||20} 日。`
+        + '20日基準尚未穩定，此期間的佔比變化與放量倍數僅供參考，約一個月後才會進入正常狀態。';
+    } else { n.hidden = true; }
+
+    drawQuad(); drawTable();
+  }
+
+  // 四象限散佈圖：X=佔比變化, Y=放量倍數(以1.0為中線), 泡泡大小=20日成交規模
+  function drawQuad(){
+    const q = $('#quad');
+    q.querySelectorAll('.bub,.bub-tag').forEach(e=>e.remove());
+    const rows = ROWS.filter(r=>r.share_delta!=null && r.vol_ratio!=null);
+    if(!rows.length) return;
+
+    const maxAbsX = Math.max(...rows.map(r=>Math.abs(r.share_delta)), 0.5);
+    const maxAbsY = Math.max(...rows.map(r=>Math.abs(r.vol_ratio-1)), 0.2);
+    const maxV = Math.max(...rows.map(r=>r.value_20d||0), 1);
+
+    // 依規模排序，大的先畫，小的後畫才不會被蓋住
+    const sorted = rows.slice().sort((a,b)=>(b.value_20d||0)-(a.value_20d||0));
+    const labelSet = new Set(sorted.slice(0,12).map(r=>r.industry));
+
+    sorted.forEach(r=>{
+      const x = 50 + (r.share_delta/maxAbsX)*46;
+      const y = 50 - ((r.vol_ratio-1)/maxAbsY)*44;
+      const size = 12 + Math.sqrt((r.value_20d||0)/maxV)*44;
+      const b = document.createElement('span');
+      b.className = 'bub ' + (r.share_delta>=0?'pos':'neg');
+      b.style.cssText = `left:${x}%;top:${y}%;width:${size}px;height:${size}px`;
+      b.title = `${r.industry}\n佔比變化 ${fmtPP(r.share_delta)}pp（近5日 ${r.share_5d}% vs 近20日 ${r.share_20d}%）\n放量倍數 ${r.vol_ratio}\n20日成交 ${fmtYi(r.value_20d)} 億`;
+      q.appendChild(b);
+      if(labelSet.has(r.industry)){
+        const t = document.createElement('span');
+        t.className='bub-tag';
+        t.style.cssText = `left:${x}%;top:calc(${y}% + ${size/2+9}px)`;
+        t.textContent = r.industry;
+        q.appendChild(t);
+      }
+    });
+  }
+
+  function drawTable(){
+    let rows = ROWS.slice();
+    const k = SORT.k, dir = SORT.dir;
+    if(k!=='rank'){
+      rows.sort((a,b)=>{
+        const av=a[k], bv=b[k];
+        if(av==null) return 1; if(bv==null) return -1;
+        return (typeof av==='number') ? (av-bv)*dir : String(av).localeCompare(String(bv),'zh-Hant')*dir;
+      });
+    }
+    $('#empty').hidden = rows.length>0;
+    const maxAbs = Math.max(...rows.map(r=>Math.abs(r.share_delta||0)), 0.5);
+
+    $('#tbody').innerHTML = rows.map((r,i)=>{
+      const d = r.share_delta, pos = (d||0)>=0;
+      const w = d==null?0:(Math.abs(d)/maxAbs)*50;
+      const vr = r.vol_ratio;
+      return `<tr>
+        <td class="txt num" style="color:#9AA5B1">${i+1}</td>
+        <td class="txt" style="font-weight:500">${r.industry}</td>
+        <td><span class="pill ${pos?'pos':'neg'}">${fmtPP(d)}pp</span></td>
+        <td class="txt"><span class="sbar"><span class="${pos?'pos':'neg'}" style="width:${w}%"></span></span></td>
+        <td class="num">${r.share_5d==null?'—':r.share_5d.toFixed(2)+'%'}</td>
+        <td class="num" style="color:var(--muted)">${r.share_20d==null?'—':r.share_20d.toFixed(2)+'%'}</td>
+        <td class="num ${vr==null?'':(vr>=1?'pos':'neg')}">${vr==null?'—':vr.toFixed(2)+'×'}</td>
+        <td class="num">${fmtYi(r.today_value)}</td>
+        <td class="num" style="color:var(--muted)">${fmtYi(r.value_20d)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.querySelectorAll('th button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const k = btn.dataset.k;
+      SORT = (SORT.k===k) ? {k,dir:SORT.dir*-1} : {k, dir:(k==='industry')?1:-1};
+      document.querySelectorAll('th').forEach(th=>th.classList.remove('sorted'));
+      document.querySelectorAll('th .arrow').forEach(a=>a.remove());
+      btn.closest('th').classList.add('sorted');
+      btn.insertAdjacentHTML('beforeend', `<span class="arrow">${SORT.dir<0?'▼':'▲'}</span>`);
+      drawTable();
+    });
+  });
+  window.addEventListener('resize', drawQuad);
+  load();
+})();
+</script>
+</body>
+</html>
