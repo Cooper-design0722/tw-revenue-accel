@@ -7,15 +7,10 @@
 執行時機：Daily Scan 排程的最後一步（量能、估值抓完之後才寄）
 所需環境變數（存在 GitHub Secrets）：
     GMAIL_APP_PASSWORD   Gmail 應用程式密碼（16 碼）
-
-寄件帳號與收件信箱寫死在下面，不需要存 Secret：
-    SENDER_EMAIL = "as0981014778@gmail.com"
-    RECIPIENT_EMAIL = "as0981014778@gmail.com"
 """
 
 import json
 import os
-import csv
 import io
 import datetime
 import smtplib
@@ -23,6 +18,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+from email.utils import encode_rfc2231
 
 SENDER_EMAIL = "as0981014778@gmail.com"
 RECIPIENT_EMAIL = "as0981014778@gmail.com"
@@ -58,7 +54,6 @@ def build_csv():
         print("[ERROR] 月營收資料為空，無法產出 CSV")
         return None, None, None
 
-    # 欄位順序
     headers = [
         "股號", "公司名稱", "市場", "產業別", "市值規模", "市值(億)",
         "當月營收(千元)", "累計營收(千元)",
@@ -100,15 +95,14 @@ def build_csv():
         ]
         rows.append([esc(c) for c in row])
 
-    # UTF-8 BOM 讓 Excel 直接開中文不亂碼
     buf = io.StringIO()
-    buf.write("\ufeff")  # BOM
+    buf.write("\ufeff")  # UTF-8 BOM，Excel 開中文不亂碼
     buf.write(",".join(headers) + "\r\n")
     for row in rows:
         buf.write(",".join(row) + "\r\n")
 
     csv_content = buf.getvalue()
-    print(f"CSV 產出：{len(rows)} 筆，{len(csv_content)//1024} KB")
+    print(f"CSV 產出：{len(rows)} 筆，{len(csv_content.encode('utf-8'))//1024} KB")
     return csv_content, data_ym, trade_date
 
 
@@ -119,9 +113,8 @@ def send_email(csv_content, data_ym, trade_date):
         return False
 
     today = datetime.date.today().strftime("%Y-%m-%d")
-    filename = f"台股月營收_{data_ym}_{trade_date or today}.csv"
+    ascii_date = (trade_date or today).replace("-", "")
 
-    # 組信件
     msg = MIMEMultipart()
     msg["From"] = SENDER_EMAIL
     msg["To"] = RECIPIENT_EMAIL
@@ -147,19 +140,27 @@ def send_email(csv_content, data_ym, trade_date):
 """
     msg.attach(MIMEText(body, "plain", "utf-8"))
 
-    # 附件
-    part = MIMEBase("application", "octet-stream")
+    # 附件：MIME type 設 text/csv，Gmail 才認得出來
+    # 檔名同時設 ASCII 備用名與 RFC2231 中文名，確保各種 mail client 都能正確顯示
+    part = MIMEBase("text", "csv", charset="utf-8")
     part.set_payload(csv_content.encode("utf-8-sig"))
     encoders.encode_base64(part)
-    part.add_header("Content-Disposition", f'attachment; filename="{filename}"')
+    encoded_name = encode_rfc2231(
+        f"台股月營收_{data_ym}_{ascii_date}.csv", charset="utf-8"
+    )
+    part.add_header(
+        "Content-Disposition",
+        "attachment",
+        filename=f"revenue_{ascii_date}.csv",
+        **{"filename*": encoded_name}
+    )
     msg.attach(part)
 
-    # 寄信
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(SENDER_EMAIL, password)
             smtp.send_message(msg)
-        print(f"[OK] 已寄出 → {RECIPIENT_EMAIL}（附件：{filename}）")
+        print(f"[OK] 已寄出 → {RECIPIENT_EMAIL}（附件：revenue_{ascii_date}.csv）")
         return True
     except smtplib.SMTPAuthenticationError:
         print("[ERROR] Gmail 認證失敗 —— 請確認：")
@@ -181,7 +182,6 @@ def main():
     print("\n=== 寄送 Email ===")
     ok = send_email(csv_content, data_ym, trade_date)
     if not ok:
-        # 寄信失敗時讓 GitHub Actions 標記失敗，讓你知道有問題
         raise SystemExit(1)
 
 
