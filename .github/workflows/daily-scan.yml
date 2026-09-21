@@ -1,0 +1,61 @@
+# 放置路徑：.github/workflows/daily-scan.yml
+#
+# 這支取代原本的 daily-volume-scan.yml —— 把「族群量能」與「估值」併成同一個 job。
+# 為什麼要合併：兩支排程若各自 commit，很容易在同一時間 push 撞在一起。
+# 合併成一個 job、跑完一次 commit，最單純也最不會出錯。
+#
+# 時間：cron '0 8 * * 1-5' = 週一到週五 UTC 08:00 = 台北時間 16:00
+#   台股 13:30 收盤，交易所盤後資料通常 15:00 前後才齊，16:00 有足夠緩衝。
+#   （設 14:30 會有機率抓到前一日的舊資料，不建議）
+#   腳本本身會以「交易日期」為準寫入，抓到舊資料也不會污染，只是當天沒更新。
+#
+# 假日照跑是安全的：交易所會回傳前一交易日資料，腳本以日期為 key 覆蓋而非累加。
+
+name: Daily Scan (Volume + Valuation)
+
+on:
+  schedule:
+    - cron: '0 8 * * 1-5'    # 台北時間 16:00
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-commit
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Sector volume
+        run: python scripts/fetch_volume.py
+
+      - name: Valuation (price + PE + YTD EPS)
+        run: python scripts/fetch_valuation.py
+
+      - name: Send daily CSV email
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python scripts/send_daily_csv.py
+
+      - name: Commit and push results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
+          git add data/
+          git diff --staged --quiet || git commit -m "chore: daily scan $(date -u +%Y-%m-%d)"
+          git push
