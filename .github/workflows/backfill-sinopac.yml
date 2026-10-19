@@ -1,0 +1,71 @@
+# 放置路徑：.github/workflows/backfill-sinopac.yml
+#
+# 一次性回補歷史資料，只在手動按下時執行。按 Run workflow 時會出現下拉選單：
+#   price    股價回補（FinMind）→ 1/5/10/20/60/120/240 日漲幅、今年以來漲幅
+#            逐檔約 3.6 小時；若 token 支援整批則約 30 分鐘
+#   revenue  月營收回補（FinMind，約 3.5 小時）→ 三年平均、營收創新高、連續成長月數
+#
+# 兩種都可中斷續跑：log 結尾若顯示「尚未全部完成」，再按一次 Run workflow 即可，
+# 已完成的會自動跳過。不要同時跑兩種：兩者共用 FinMind 每小時 600 次的額度，
+# 同時跑會互相拖慢（本檔的 concurrency 設定會讓它們自動排隊，不會同時執行）。
+#
+# 需要 Secret：FINMIND_TOKEN
+
+name: 回補 SinoPac 欄位（手動執行）
+
+on:
+  workflow_dispatch:
+    inputs:
+      which:
+        description: '要回補什麼？'
+        type: choice
+        default: price
+        options:
+          - price
+          - revenue
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-commit
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: "股價回補（FinMind）"
+        if: ${{ inputs.which == 'price' }}
+        env:
+          FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+        run: python scripts/backfill_price_finmind.py
+
+      - name: "月營收回補（FinMind）"
+        if: ${{ inputs.which == 'revenue' }}
+        env:
+          FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+        run: python scripts/backfill_revenue_history.py
+
+      # always()：即使上一步逾時或失敗，已抓到的進度也要存回 repo，下次才能接續
+      - name: Commit progress
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
+          git add data/
+          git diff --staged --quiet || git commit -m "chore: backfill ${{ inputs.which }}"
+          git push
