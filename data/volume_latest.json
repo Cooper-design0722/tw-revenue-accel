@@ -1,141 +1,171 @@
 {
-  "trade_date": "2026-10-19",
+  "trade_date": "2026-10-20",
   "updated_at": "2026-10-20",
-  "history_days": 15,
+  "history_days": 16,
   "window_short": 5,
   "window_long": 20,
   "ready": false,
-  "market_total_today": 980205049780.0,
+  "market_total_today": 974606306737.0,
   "industries": [
     {
       "industry": "電子零組件業",
-      "today_value": 291578317763.0,
-      "today_share": 29.75,
-      "share_5d": 26.56,
-      "share_20d": 25.25,
-      "share_delta": 1.31,
-      "vol_ratio": 0.92,
-      "value_20d": 3720972538775.0
+      "today_value": 298074771979.0,
+      "today_share": 30.58,
+      "share_5d": 27.6,
+      "share_20d": 25.58,
+      "share_delta": 2.02,
+      "vol_ratio": 1.01,
+      "value_20d": 4019047310754.0
     },
     {
       "industry": "塑膠工業",
-      "today_value": 39142791321.0,
-      "today_share": 3.99,
-      "share_5d": 4.42,
-      "share_20d": 3.33,
-      "share_delta": 1.09,
-      "vol_ratio": 1.16,
-      "value_20d": 489994546438.0
-    },
-    {
-      "industry": "航運業",
-      "today_value": 7820195936.0,
-      "today_share": 0.8,
-      "share_5d": 1.85,
-      "share_20d": 1.04,
-      "share_delta": 0.81,
-      "vol_ratio": 1.55,
-      "value_20d": 152605834559.0
+      "today_value": 39154724752.0,
+      "today_share": 4.02,
+      "share_5d": 4.91,
+      "share_20d": 3.37,
+      "share_delta": 1.54,
+      "vol_ratio": 1.36,
+      "value_20d": 529149271190.0
     },
     {
       "industry": "通信網路業",
-      "today_value": 40635136177.0,
-      "today_share": 4.15,
+      "today_value": 37474759616.0,
+      "today_share": 3.85,
       "share_5d": 4.48,
       "share_20d": 3.93,
-      "share_delta": 0.54,
-      "vol_ratio": 0.99,
-      "value_20d": 579667728773.0
+      "share_delta": 0.55,
+      "vol_ratio": 1.07,
+      "value_20d": 617142488389.0
     },
     {
       "industry": "油電燃氣業",
-      "today_value": 9140425455.0,
-      "today_share": 0.93,
-      "share_5d": 0.82,
-      "share_20d": 0.43,
-      "share_delta": 0.39,
-      "vol_ratio": 1.66,
-      "value_20d": 63148959018.0
+      "today_value": 9140257649.0,
+      "today_share": 0.94,
+      "share_5d": 0.96,
+      "share_20d": 0.46,
+      "share_delta": 0.5,
+      "vol_ratio": 1.94,
+      "value_20d": 72289216667.0
     },
     {
       "industry": "玻璃陶瓷",
       "today_value": 14525081378.0,
-      "today_share": 1.48,
-      "share_5d": 0.71,
-      "share_20d": 0.42,
-      "share_delta": 0.29,
-      "vol_ratio": 1.47,
-      "value_20d": 61647031962.0
+      "today_share": 1.49,
+      "share_5d": 0.97,
+      "share_20d": 0.48,
+      "share_delta": 0.49,
+      "vol_ratio": 1.87,
+      "value_20d": 76172113340.0
     },
     {
-      "industry": "電腦及週邊設備業",
-      "today_value": 57958791328.0,
-      "today_share": 5.91,
-      "share_5d": 5.93,
-      "share_20d": 5.77,
-      "share_delta": 0.15,
-      "vol_ratio": 0.89,
-      "value_20d": 850738072765.0
+      "industry": "航運業",
+      "today_value": 7810343526.0,
+      "today_share": 0.8,
+      "share_5d": 1.31,
+      "share_20d": 1.02,
+      "share_delta": 0.29,
+      "vol_ratio": 1.2,
+      "value_20d": 160416178085.0
+    },
+    {
+      "industry": "電機機械",
+      "today_value": 22015074721.0,
+      "today_share": 2.26,
+      "share_5d": 2.03,
+      "share_20d": 1.88,
+      "share_delta": 0.16,
+      "vol_ratio": 1.01,
+      "value_20d": 294718482432.0
     },
     {
       "industry": "資訊服務業",
-      "today_value": 3363450797.0,
-      "today_share": 0.34,
-      "share_5d": 0.26,
+      "today_value": 2506320636.0,
+      "today_share": 0.26,
+      "share_5d": 0.28,
       "share_20d": 0.18,
-      "share_delta": 0.08,
-      "vol_ratio": 1.28,
-      "value_20d": 26396091451.0
+      "share_delta": 0.09,
+      "vol_ratio": 1.4,
+      "value_20d": 28902412087.0
     },
     {
       "industry": "文化創意業",
-      "today_value": 1472326585.0,
-      "today_share": 0.15,
-      "share_5d": 0.21,
-      "share_20d": 0.15,
-      "share_delta": 0.06,
-      "vol_ratio": 1.26,
-      "value_20d": 21458911296.0
-    },
-    {
-      "industry": "電器電纜",
-      "today_value": 1422696021.0,
-      "today_share": 0.15,
+      "today_value": 1320179571.0,
+      "today_share": 0.14,
       "share_5d": 0.23,
-      "share_20d": 0.17,
-      "share_delta": 0.06,
-      "vol_ratio": 1.17,
-      "value_20d": 24905857864.0
+      "share_20d": 0.14,
+      "share_delta": 0.08,
+      "vol_ratio": 1.45,
+      "value_20d": 22779090867.0
     },
     {
       "industry": "居家生活",
-      "today_value": 854126805.0,
-      "today_share": 0.09,
-      "share_5d": 0.07,
+      "today_value": 632403389.0,
+      "today_share": 0.06,
+      "share_5d": 0.08,
       "share_20d": 0.05,
       "share_delta": 0.03,
-      "vol_ratio": 1.38,
-      "value_20d": 6651387015.0
+      "vol_ratio": 1.53,
+      "value_20d": 7283790404.0
     },
     {
       "industry": "數位雲端",
-      "today_value": 1435052959.0,
-      "today_share": 0.15,
-      "share_5d": 0.09,
+      "today_value": 1085789528.0,
+      "today_share": 0.11,
+      "share_5d": 0.11,
       "share_20d": 0.08,
+      "share_delta": 0.03,
+      "vol_ratio": 1.28,
+      "value_20d": 12356292113.0
+    },
+    {
+      "industry": "貿易百貨",
+      "today_value": 1447642325.0,
+      "today_share": 0.15,
+      "share_5d": 0.1,
+      "share_20d": 0.07,
+      "share_delta": 0.03,
+      "vol_ratio": 1.35,
+      "value_20d": 10375396451.0
+    },
+    {
+      "industry": "食品工業",
+      "today_value": 1691063984.0,
+      "today_share": 0.17,
+      "share_5d": 0.15,
+      "share_20d": 0.12,
+      "share_delta": 0.03,
+      "vol_ratio": 1.17,
+      "value_20d": 18778192513.0
+    },
+    {
+      "industry": "其他",
+      "today_value": 4259292174.0,
+      "today_share": 0.44,
+      "share_5d": 0.48,
+      "share_20d": 0.46,
       "share_delta": 0.02,
-      "vol_ratio": 1.05,
-      "value_20d": 11270502585.0
+      "vol_ratio": 0.98,
+      "value_20d": 72269513759.0
     },
     {
       "industry": "金融業",
-      "today_value": 332411857.0,
+      "today_value": 249216428.0,
       "today_share": 0.03,
-      "share_5d": 0.04,
+      "share_5d": 0.05,
       "share_20d": 0.03,
       "share_delta": 0.02,
-      "vol_ratio": 1.42,
-      "value_20d": 3885811091.0
+      "vol_ratio": 1.62,
+      "value_20d": 4135027519.0
+    },
+    {
+      "industry": "電器電纜",
+      "today_value": 1405564721.0,
+      "today_share": 0.14,
+      "share_5d": 0.19,
+      "share_20d": 0.17,
+      "share_delta": 0.02,
+      "vol_ratio": 1.06,
+      "value_20d": 26311422585.0
     },
     {
       "industry": "存託憑證",
@@ -144,78 +174,48 @@
       "share_5d": 0.03,
       "share_20d": 0.02,
       "share_delta": 0.01,
-      "vol_ratio": 1.43,
-      "value_20d": 3114963710.0
-    },
-    {
-      "industry": "貿易百貨",
-      "today_value": 1447642325.0,
-      "today_share": 0.15,
-      "share_5d": 0.07,
-      "share_20d": 0.06,
-      "share_delta": 0.01,
-      "vol_ratio": 1.02,
-      "value_20d": 8927754126.0
-    },
-    {
-      "industry": "食品工業",
-      "today_value": 1704617178.0,
-      "today_share": 0.17,
-      "share_5d": 0.13,
-      "share_20d": 0.12,
-      "share_delta": 0.01,
-      "vol_ratio": 0.94,
-      "value_20d": 17087128529.0
-    },
-    {
-      "industry": "橡膠工業",
-      "today_value": 474962401.0,
-      "today_share": 0.05,
-      "share_5d": 0.05,
-      "share_20d": 0.04,
-      "share_delta": 0.0,
-      "vol_ratio": 0.94,
-      "value_20d": 6355867151.0
+      "vol_ratio": 1.21,
+      "value_20d": 3435167617.0
     },
     {
       "industry": "水泥工業",
       "today_value": 1106356106.0,
       "today_share": 0.11,
-      "share_5d": 0.13,
+      "share_5d": 0.14,
       "share_20d": 0.13,
-      "share_delta": -0.0,
-      "vol_ratio": 0.86,
-      "value_20d": 18752091410.0
+      "share_delta": 0.01,
+      "vol_ratio": 1.04,
+      "value_20d": 19858447516.0
     },
     {
-      "industry": "紡織纖維",
-      "today_value": 1076774858.0,
-      "today_share": 0.11,
-      "share_5d": 0.16,
-      "share_20d": 0.16,
-      "share_delta": -0.0,
-      "vol_ratio": 0.87,
-      "value_20d": 23701781964.0
+      "industry": "橡膠工業",
+      "today_value": 474962401.0,
+      "today_share": 0.05,
+      "share_5d": 0.04,
+      "share_20d": 0.04,
+      "share_delta": 0.0,
+      "vol_ratio": 0.96,
+      "value_20d": 6830829552.0
     },
     {
       "industry": "觀光餐旅",
-      "today_value": 219060085.0,
+      "today_value": 225283998.0,
       "today_share": 0.02,
       "share_5d": 0.02,
       "share_20d": 0.02,
       "share_delta": 0.0,
-      "vol_ratio": 1.03,
-      "value_20d": 3034932831.0
+      "vol_ratio": 1.04,
+      "value_20d": 3260216829.0
     },
     {
       "industry": "農業科技",
-      "today_value": 2743774.0,
+      "today_value": 2642137.0,
       "today_share": 0.0,
       "share_5d": 0.0,
       "share_20d": 0.0,
       "share_delta": -0.0,
-      "vol_ratio": 0.49,
-      "value_20d": 124438475.0
+      "vol_ratio": 0.58,
+      "value_20d": 127080612.0
     },
     {
       "industry": "造紙工業",
@@ -224,148 +224,148 @@
       "share_5d": 0.02,
       "share_20d": 0.02,
       "share_delta": 0.0,
-      "vol_ratio": 1.07,
-      "value_20d": 2594290626.0
+      "vol_ratio": 1.15,
+      "value_20d": 2686818490.0
     },
     {
-      "industry": "光電業",
-      "today_value": 62392186536.0,
-      "today_share": 6.37,
-      "share_5d": 8.02,
-      "share_20d": 8.03,
-      "share_delta": -0.01,
-      "vol_ratio": 0.87,
-      "value_20d": 1183048488553.0
+      "industry": "運動休閒",
+      "today_value": 1013216816.0,
+      "today_share": 0.1,
+      "share_5d": 0.09,
+      "share_20d": 0.09,
+      "share_delta": 0.0,
+      "vol_ratio": 0.94,
+      "value_20d": 13856163413.0
     },
     {
-      "industry": "其他",
-      "today_value": 5067594098.0,
-      "today_share": 0.52,
-      "share_5d": 0.45,
-      "share_20d": 0.46,
+      "industry": "紡織纖維",
+      "today_value": 1079468379.0,
+      "today_share": 0.11,
+      "share_5d": 0.15,
+      "share_20d": 0.16,
       "share_delta": -0.01,
-      "vol_ratio": 0.85,
-      "value_20d": 68010221585.0
+      "vol_ratio": 0.86,
+      "value_20d": 24781250343.0
+    },
+    {
+      "industry": "鋼鐵工業",
+      "today_value": 2803983659.0,
+      "today_share": 0.29,
+      "share_5d": 0.27,
+      "share_20d": 0.28,
+      "share_delta": -0.01,
+      "vol_ratio": 0.91,
+      "value_20d": 43561495891.0
     },
     {
       "industry": "汽車工業",
       "today_value": 1445965786.0,
       "today_share": 0.15,
-      "share_5d": 0.21,
-      "share_20d": 0.22,
-      "share_delta": -0.01,
-      "vol_ratio": 0.84,
-      "value_20d": 32308944359.0
-    },
-    {
-      "industry": "運動休閒",
-      "today_value": 1019183001.0,
-      "today_share": 0.1,
-      "share_5d": 0.08,
-      "share_20d": 0.09,
-      "share_delta": -0.01,
-      "vol_ratio": 0.81,
-      "value_20d": 12842946597.0
-    },
-    {
-      "industry": "鋼鐵工業",
-      "today_value": 2853397230.0,
-      "today_share": 0.29,
-      "share_5d": 0.25,
-      "share_20d": 0.28,
+      "share_5d": 0.19,
+      "share_20d": 0.21,
       "share_delta": -0.02,
-      "vol_ratio": 0.8,
-      "value_20d": 40757512232.0
-    },
-    {
-      "industry": "電子通路業",
-      "today_value": 4655615470.0,
-      "today_share": 0.47,
-      "share_5d": 0.53,
-      "share_20d": 0.54,
-      "share_delta": -0.02,
-      "vol_ratio": 0.84,
-      "value_20d": 80126977762.0
-    },
-    {
-      "industry": "電機機械",
-      "today_value": 21832994373.0,
-      "today_share": 2.23,
-      "share_5d": 1.83,
-      "share_20d": 1.85,
-      "share_delta": -0.02,
-      "vol_ratio": 0.86,
-      "value_20d": 272703407711.0
+      "vol_ratio": 0.83,
+      "value_20d": 33754910145.0
     },
     {
       "industry": "建材營造",
-      "today_value": 1359897049.0,
+      "today_value": 1332509171.0,
       "today_share": 0.14,
-      "share_5d": 0.13,
+      "share_5d": 0.11,
       "share_20d": 0.17,
-      "share_delta": -0.04,
-      "vol_ratio": 0.65,
-      "value_20d": 24969422392.0
+      "share_delta": -0.05,
+      "vol_ratio": 0.64,
+      "value_20d": 26301931563.0
+    },
+    {
+      "industry": "電子通路業",
+      "today_value": 4571124144.0,
+      "today_share": 0.47,
+      "share_5d": 0.49,
+      "share_20d": 0.54,
+      "share_delta": -0.05,
+      "vol_ratio": 0.85,
+      "value_20d": 84698101906.0
     },
     {
       "industry": "綠能環保",
-      "today_value": 1966027371.0,
-      "today_share": 0.2,
-      "share_5d": 0.2,
-      "share_20d": 0.29,
-      "share_delta": -0.09,
-      "vol_ratio": 0.61,
-      "value_20d": 42615965161.0
-    },
-    {
-      "industry": "化學工業",
-      "today_value": 4654148419.0,
-      "today_share": 0.47,
-      "share_5d": 0.58,
-      "share_20d": 0.82,
-      "share_delta": -0.23,
+      "today_value": 2040108078.0,
+      "today_share": 0.21,
+      "share_5d": 0.19,
+      "share_20d": 0.28,
+      "share_delta": -0.1,
       "vol_ratio": 0.62,
-      "value_20d": 120593096483.0
+      "value_20d": 44656073239.0
     },
     {
       "industry": "生技醫療業",
-      "today_value": 6641046152.0,
-      "today_share": 0.68,
-      "share_5d": 0.54,
-      "share_20d": 0.79,
-      "share_delta": -0.25,
-      "vol_ratio": 0.6,
-      "value_20d": 116037332784.0
+      "today_value": 6089014360.0,
+      "today_share": 0.62,
+      "share_5d": 0.56,
+      "share_20d": 0.78,
+      "share_delta": -0.21,
+      "vol_ratio": 0.68,
+      "value_20d": 122126347144.0
+    },
+    {
+      "industry": "電腦及週邊設備業",
+      "today_value": 57326666708.0,
+      "today_share": 5.88,
+      "share_5d": 5.57,
+      "share_20d": 5.78,
+      "share_delta": -0.21,
+      "vol_ratio": 0.9,
+      "value_20d": 908064739473.0
+    },
+    {
+      "industry": "化學工業",
+      "today_value": 4656363853.0,
+      "today_share": 0.48,
+      "share_5d": 0.53,
+      "share_20d": 0.8,
+      "share_delta": -0.27,
+      "vol_ratio": 0.62,
+      "value_20d": 125249460336.0
     },
     {
       "industry": "其他電子業",
-      "today_value": 42370723057.0,
+      "today_value": 42113202437.0,
       "today_share": 4.32,
-      "share_5d": 3.92,
-      "share_20d": 4.63,
-      "share_delta": -0.7,
-      "vol_ratio": 0.74,
-      "value_20d": 681890670453.0
+      "share_5d": 3.87,
+      "share_20d": 4.61,
+      "share_delta": -0.73,
+      "vol_ratio": 0.79,
+      "value_20d": 724003872890.0
     },
     {
       "industry": "金融保險業",
       "today_value": 20469809990.0,
-      "today_share": 2.09,
-      "share_5d": 0.71,
-      "share_20d": 1.78,
-      "share_delta": -1.07,
-      "vol_ratio": 0.35,
-      "value_20d": 262184639209.0
+      "today_share": 2.1,
+      "share_5d": 1.04,
+      "share_20d": 1.8,
+      "share_delta": -0.76,
+      "vol_ratio": 0.54,
+      "value_20d": 282654449199.0
+    },
+    {
+      "industry": "光電業",
+      "today_value": 63792635947.0,
+      "today_share": 6.55,
+      "share_5d": 7.08,
+      "share_20d": 7.94,
+      "share_delta": -0.86,
+      "vol_ratio": 0.83,
+      "value_20d": 1246841124500.0
     },
     {
       "industry": "半導體業",
-      "today_value": 327350768368.0,
-      "today_share": 33.4,
-      "share_5d": 36.28,
-      "share_20d": 38.68,
-      "share_delta": -2.41,
-      "vol_ratio": 0.82,
-      "value_20d": 5700104142527.0
+      "today_value": 320857774619.0,
+      "today_share": 32.92,
+      "share_5d": 35.67,
+      "share_20d": 38.33,
+      "share_delta": -2.65,
+      "vol_ratio": 0.87,
+      "value_20d": 6020961917146.0
     }
   ]
 }
