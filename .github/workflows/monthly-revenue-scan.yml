@@ -1,0 +1,51 @@
+# 放置路徑：你的repo根目錄下的 .github/workflows/monthly-revenue-scan.yml
+#
+# 排程說明：
+# - cron 是 UTC 時間。'0 1 13-16 * *' = 每月 13～16 日 UTC 01:00 = 台北時間早上 09:00，每天各跑一次
+# - 為什麼跑四天：
+#   法規要求月營收在次月 10 日前公告，但交易所 OpenAPI 的彙總表不一定當天同步。
+#   連跑四天，API 哪天更新都抓得到；重複跑會覆蓋成相同結果，沒有副作用。
+# - workflow_dispatch 保留，隨時可以在網頁上手動補跑
+
+name: Monthly Revenue Accelerating Stock Scan
+
+on:
+  schedule:
+    - cron: '0 1 13-16 * *'    # 每月 13～16 日，台北時間 09:00
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # 需要寫入權限才能把抓到的資料commit回repo
+
+# 與每日、每季排程共用同一組，避免同時存檔互相衝突
+concurrency:
+  group: data-commit
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run scan script
+        run: python scripts/fetch_data.py
+
+      - name: Commit and push results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # 先同步遠端最新狀態，避免與其他排程的存檔衝突而 push 失敗
+          git pull --rebase --autostash || true
+          git add data/
+          git diff --staged --quiet || git commit -m "chore: monthly revenue scan $(date -u +%Y-%m-%d)"
+          git push
